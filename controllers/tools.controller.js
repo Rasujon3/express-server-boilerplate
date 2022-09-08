@@ -59,29 +59,66 @@ module.exports.getToolDetail = async (req, res, next) => {
 
     const tool = await db.collection("tools").findOne({ _id: ObjectId(id) });
 
+    if (!tool) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Cont find data with this id" });
+    }
+
     res.status(200).json({ success: true, data: tool });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports.deleteTool = (req, res) => {
-  const { id } = req.params;
-  const filter = { _id: id };
+module.exports.deleteTool = async (req, res) => {
+  try {
+    const db = getDb();
+    const { id } = req.params;
 
-  tools = tools.filter((tool) => tool.id !== Number(id));
-  res.send(tools);
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, error: "Not a valid id" });
+    }
+
+    const tool = await db.collection("tools").deleteOne({ _id: ObjectId(id) });
+
+    if (!tool.deletedCount) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Couldn't delete the tool" });
+    }
+
+    res
+      .status(200)
+      .json({ success: true, data: "Successfully deleted the tool" });
+  } catch (error) {
+    next(error);
+  }
 };
 
-module.exports.updateTool = (req, res) => {
-  const { id } = req.params;
-  // const newData = req.body;
-  const filter = { _id: id };
+module.exports.updateTool = async (req, res) => {
+  try {
+    const db = getDb();
+    const { id } = req.params;
 
-  const newData = tools.find((tool) => tool.id === Number(id));
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, error: "Not a valid id" });
+    }
 
-  newData.id = id;
-  newData.name = req.body.name;
+    const tool = await db
+      .collection("tools")
+      .updateOne({ _id: ObjectId(id) }, { $set: req.body });
 
-  res.send(newData);
+    if (!tool.modifiedCount) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Couldn't update the tool" });
+    }
+
+    res
+      .status(200)
+      .json({ success: true, data: "Successfully update the tool" });
+  } catch (error) {
+    next(error);
+  }
 };
