@@ -1,3 +1,5 @@
+const { getDb } = require("../utils/dbConnect");
+
 let tools = [
   { id: 1, name: "Hammer" },
   { id: 2, name: "Hammer2" },
@@ -10,10 +12,22 @@ module.exports.getAllTools = (req, res, next) => {
   res.json(tools.slice(0, limit));
 };
 
-module.exports.saveATool = (req, res) => {
-  console.log(req.query);
-  tools.push(req.body);
-  res.send(tools);
+module.exports.saveATool = async (req, res, next) => {
+  try {
+    const db = getDb();
+    const tool = req.body;
+
+    const result = await db.collection("tools").insertOne(tool);
+    console.log(result);
+    if (!result.insertedId) {
+      res.status(400).send({ status: false, error: "Something went wrong" });
+    }
+    if (result.insertedId) {
+      res.send(`Tool added with id: ${result.insertedId}`);
+    }
+  } catch (error) {
+    next(error);
+  }
 };
 
 module.exports.getToolDetail = (req, res) => {
